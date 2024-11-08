@@ -43,6 +43,10 @@ target_compile_options(project_warnings
     -Wdouble-promotion
     -Wformat=2)
 
+#if(ENABLE_TESTING)
+    enable_testing()
+#endif()
+
 # some GCC specific warnings. These flags are added only if the used compiler is GCC.
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     target_compile_options(project_warnings
