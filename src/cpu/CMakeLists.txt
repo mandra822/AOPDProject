@@ -21,3 +21,8 @@ install(TARGETS cpu_module
     LIBRARY DESTINATION       ${CMAKE_INSTALL_LIBDIR}
     INCLUDES DESTINATION      ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/
     ARCHIVE DESTINATION       ${CMAKE_INSTALL_SHAREDSTATEDIR})
+
+if(ENABLE_TESTING)
+    #    enable_testing()
+    add_subdirectory(tests)
+endif()
