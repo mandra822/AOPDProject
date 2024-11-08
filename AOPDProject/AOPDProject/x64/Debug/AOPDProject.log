@@ -1,10 +1,14 @@
 ﻿  ACOImplementation.cpp
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(19,62): warning C4244: "+=": konwersja z "double" do "float", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(21,62): warning C4244: "+=": konwersja z "double" do "float", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(46,73): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(49,73): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(61,22): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(78,61): warning C4244: "argument": konwersja z "float" do "int", możliwa utrata danych
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(117,28): warning C4305: "argument": obcięcie z "double" do "float"
-C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(68,1): warning C4715: "ACOImplementation::choseVertexByProbability”: niewszystkie ścieżki kodu zwracają wartość
-  AOPDProject.vcxproj -> C:\Users\micha\Desktop\aopd\AOPDProject\AOPDProject\x64\Debug\AOPDProject.exe
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(19,62): warning C4244: "+=": konwersja z "double" do "float", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(21,62): warning C4244: "+=": konwersja z "double" do "float", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(46,73): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(49,73): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(61,22): warning C4244: "=": konwersja z "double" do "float", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(78,61): warning C4244: "argument": konwersja z "float" do "int", możliwa utrata danych
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(128,28): warning C4305: "argument": obcięcie z "double" do "float"
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(84,6): warning C4101: "chosenVertex": lokalna zmienna, do której nie istnieje odwołanie
+  Main.cpp
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\Main.cpp(9,12): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
+  Generowanie kodu...
+C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\AOPDProject\ACOImplementation.cpp(68,1): warning C4715: "ACOImplementation::choseVertexByProbability”: niewszystkie ścieżki kodu zwracają wartość
+  AOPDProject.vcxproj -> C:\Users\malan\Desktop\studia\7 sem\AOPDProject\AOPDProject\AOPDProject\x64\Debug\AOPDProject.exe

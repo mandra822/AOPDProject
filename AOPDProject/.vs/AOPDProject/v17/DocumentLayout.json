@@ -1,13 +1,24 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\",
+  "WorkspaceRootPath": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|solutionrelative:AOPDProject\\ACOImplementation.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|solutionrelative:AOPDProject\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Ant.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|solutionrelative:AOPDProject\\Ant.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\PROGRAM FILES\\MICROSOFT VISUAL STUDIO\\2022\\COMMUNITY\\VC\\TOOLS\\MSVC\\14.39.33519\\INCLUDE\\VECTOR||{3B902123-F8A7-4915-9F01-361F908088D0}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{CE6AED5A-0569-421F-9DBA-0523E6C27581}|AOPDProject\\AOPDProject.vcxproj|solutionrelative:AOPDProject\\ACOImplementation.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
@@ -18,30 +29,88 @@
       "DocumentGroups": [
         {
           "DockedWidth": 345,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 9,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{fbcae063-e2c0-4ab1-a516-996ea3dafb72}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{74946827-37a0-11d2-a273-00c04f8ef4ff}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "vector",
+              "DocumentMoniker": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\include\\vector",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\include\\vector",
+              "ToolTip": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\include\\vector",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\..\\..\\..\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\include\\vector",
+              "ViewState": "AQIAAFcHAAAAAAAAAAAAwGQHAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-11-08T18:14:59.36Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "Main.cpp",
+              "DocumentMoniker": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Main.cpp",
+              "RelativeDocumentMoniker": "AOPDProject\\Main.cpp",
+              "ToolTip": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Main.cpp",
+              "RelativeToolTip": "AOPDProject\\Main.cpp",
+              "ViewState": "AQIAAAMAAAAAAAAAAAAAACMAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-08T17:33:17.899Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Ant.cpp",
+              "DocumentMoniker": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Ant.cpp",
+              "RelativeDocumentMoniker": "AOPDProject\\Ant.cpp",
+              "ToolTip": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\Ant.cpp",
+              "RelativeToolTip": "AOPDProject\\Ant.cpp",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAIAAAAWAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-11-08T17:33:15.181Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
               "Title": "ACOImplementation.h",
-              "DocumentMoniker": "C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h",
+              "DocumentMoniker": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h",
               "RelativeDocumentMoniker": "AOPDProject\\ACOImplementation.h",
-              "ToolTip": "C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h",
+              "ToolTip": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.h",
               "RelativeToolTip": "AOPDProject\\ACOImplementation.h",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2024-11-02T18:24:16.287Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-02T18:24:16.287Z"
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "ACOImplementation.cpp",
-              "DocumentMoniker": "C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp",
+              "DocumentMoniker": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp",
               "RelativeDocumentMoniker": "AOPDProject\\ACOImplementation.cpp",
-              "ToolTip": "C:\\Users\\micha\\Desktop\\aopd\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp",
+              "ToolTip": "C:\\Users\\malan\\Desktop\\studia\\7 sem\\AOPDProject\\AOPDProject\\AOPDProject\\AOPDProject\\ACOImplementation.cpp",
               "RelativeToolTip": "AOPDProject\\ACOImplementation.cpp",
-              "ViewState": "AgIAAE8AAAAAAAAAAAAcwF0AAAAAAAAAAAAAAA==",
+              "ViewState": "AQIAAFoAAAAAAAAAAAAQwGsAAAAxAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-11-02T17:37:31.998Z",
               "EditorCaption": ""

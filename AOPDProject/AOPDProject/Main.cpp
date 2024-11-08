@@ -17,6 +17,7 @@ int main() {
 		{6, 3, 12, 0}   // Koszty przejœcia z wierzcho³ka 3 do 0, 1, 2, 3
 	};
 
+
 	float alpha = 1.5;    // Wp³yw feromonów
 	float beta = 3.0;     // Wp³yw widocznoœci (odwrotnoœci kosztu)
 	int numberOfVertexes = 4;  // Liczba wierzcho³ków
@@ -31,6 +32,8 @@ int main() {
 	{
 		cout << result[i] << " ";
 	}
+
+
 
 	return 0;
 }

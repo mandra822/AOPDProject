@@ -81,45 +81,51 @@ void ACOImplementation::init(int startingVertex, vector<vector<int>> edges, floa
 vector<int> ACOImplementation::runAcoAlgorith(int numberOfIterations)
 {
 	int startingVertexForAnt = startingVertex;
-
+	int chosenVertex;
 	for (int j = 0; j < numberOfIterations; j++) {
-		colony.clear();
-
-		// Przygotowanie kolonii mrówek
 		for (int i = 0; i < colonySize; i++) {
+			while (startingVertexForAnt == startingVertex) {
+				startingVertexForAnt = rand() % edges.size();
+			}
 			Ant newAnt;
-			newAnt.addNewVertex(startingVertex);
+			newAnt.addNewVertex(startingVertexForAnt);
 			colony.push_back(newAnt);
+			startingVertexForAnt = startingVertex;
 		}
 
-		// Wykorzystujemy wątki do generowania ścieżek dla każdej mrówki
-		std::vector<std::thread> threads;
+		const int threadsAmount = std::thread::hardware_concurrency();
 
-		for (int i = 0; i < colonySize; i++) {
-			threads.push_back(std::thread([&, i]() {
-				// Każda mrówka generuje swoją ścieżkę
-				for (int step = 1; step < numberOfVertexes; step++) {
-					int chosenVertex = choseVertexByProbability(colony[i], alpha, beta);
+		int antsAmountPerThread = colonySize / threadsAmount;
+		
+		vector<thread> threads(threadsAmount);
 
-					// Blokada mutexu podczas dodawania nowego wierzchołka przez mrówkę
-					std::lock_guard<std::mutex> guard(pheromoneMutex);
-					colony[i].addNewVertex(chosenVertex);
+		for (int i = 0; i < threadsAmount; i++)
+		{
+			int rangeBegin = i * antsAmountPerThread;
+			int rangeEnd = (i != threadsAmount - 1)? rangeBegin + antsAmountPerThread : colonySize;
+
+			threads[i] = thread([rangeBegin, rangeEnd, this] {
+				for (int j = rangeBegin; j < rangeEnd; j++) {
+					for (int i = 2; i < edges.size(); i++) {
+						colony[j].addNewVertex(choseVertexByProbability(colony[j], alpha, beta));
+					}
 				}
-				}));
+			});
 		}
 
-		// Czekamy na zakończenie wszystkich wątków
-		for (auto& thread : threads) {
-			thread.join();
+		for (int i = 0; i < threadsAmount; i++)
+		{
+			if (threads[i].joinable()) {
+				threads[i].join();
+			}
 		}
 
-		// Odparowywanie feromonów i aktualizacja ich na podstawie nowych ścieżek
+		//evaporation
 		evaporatePheromoneDAS(1, 0.1, colony);
+		colony.resize(0);
 	}
-
 	return result;
 }
-
 
 void ACOImplementation::evaporatePheromoneDAS(float Qdens, float pheromoneEvaporationRate, vector<Ant> colony)
 {
