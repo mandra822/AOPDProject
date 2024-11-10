@@ -1,9 +1,11 @@
-#include "FileData.h"
+#include "AODPProject/utils/FileData.h"
+#include <fstream>
+#include <iostream>
 
-void FileManager::loadFromFile(vector<vector<int>>& edges, int& numberOfVertexes, string fileName) {
-    ifstream file(fileName);
+void FileManager::loadFromFile(std::vector<std::vector<int> >& edges, int& numberOfVertexes, std::string fileName) {
+    std::ifstream file(fileName, std::ios::in);
     if (!file) {
-        cerr << "Error opening file!" << endl;
+        std::cerr << "Error opening file!" << std::endl;
         return;
     }
     file >> numberOfVertexes;
@@ -16,13 +18,13 @@ void FileManager::loadFromFile(vector<vector<int>>& edges, int& numberOfVertexes
     }
 }
 
-vector<FileData> FileManager::loadTestInitFile(string initFileName) {
-    ifstream file(initFileName);
+std::vector<FileData> FileManager::loadTestInitFile(std::string initFileName) {
+    std::ifstream file(initFileName, std::ios::in);
     if (!file) {
-        cerr << "Error opening init file!" << endl;
-        return;
+        std::cerr << "Error opening init file!" << std::endl;
+        return {};
     }
-    vector<FileData> testFiles;
+    std::vector<FileData> testFiles;
     int numberOfFiles;
     file >> numberOfFiles;
     testFiles.reserve(numberOfFiles);

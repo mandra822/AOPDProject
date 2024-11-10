@@ -1,6 +1,8 @@
 # setting up sources
 add_executable(cpu_module
     src/main.cpp
+    src/ACOImplementation.cpp
+    src/Ant.cpp
     )
 
 # setting up include directories

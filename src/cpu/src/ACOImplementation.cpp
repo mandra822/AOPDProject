@@ -1,4 +1,4 @@
-﻿#include "ACOImplementation.h"
+﻿#include "AODPProject/cpu/ACOImplementation.h"
 
 float ACOImplementation::calculateDenominator(Ant ant, int lastVertex, float alpha, float beta)
 {

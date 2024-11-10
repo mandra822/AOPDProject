@@ -1,6 +1,6 @@
 # setting up sources
 add_library(utils_module
-    src/main.cpp)
+    src/FileManager.cpp)
 
 # setting up include directories
 target_include_directories(utils_module
