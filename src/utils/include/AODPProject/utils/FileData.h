@@ -7,6 +7,8 @@ struct FileData {
 	std::string fileName;
 	int numberOfIterations;
 	int colonySize;
+    int bestSolution;
+    float acceptedError;
 };
 
 class FileManager {

@@ -1,6 +1,5 @@
 # setting up sources
-add_executable(cpu_module
-    src/main.cpp
+add_library(cpu_module
     src/ACOImplementation.cpp
     src/Ant.cpp
     )
@@ -24,7 +23,3 @@ install(TARGETS cpu_module
     INCLUDES DESTINATION      ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/
     ARCHIVE DESTINATION       ${CMAKE_INSTALL_SHAREDSTATEDIR})
 
-if(ENABLE_TESTING)
-    #    enable_testing()
-    add_subdirectory(tests)
-endif()
