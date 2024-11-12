@@ -1,11 +1,6 @@
-﻿#include "AODPProject/cpu/ACOImplementation.h"
+﻿#include "AODPProject/nonconcurrent/ACOImplementation.h"
 
-#include <thread>
-#include <mutex>
-#include <vector>
-#include <algorithm>
-std::mutex pheromoneMutex;
-namespace CPU {
+namespace NONCONCURRENT {
     float ACOImplementation::calculateDenominator(Ant ant, int lastVertex, float alpha, float beta)
     {
         float denominator = 0;
@@ -94,33 +89,11 @@ namespace CPU {
                 startingVertexForAnt = startingVertex;
             }
 
-            const int threadsAmount = std::thread::hardware_concurrency();
-
-            int antsAmountPerThread = colonySize / threadsAmount;
-            
-            vector<thread> threads(threadsAmount);
-
-            for (int i = 0; i < threadsAmount; i++)
-            {
-                int rangeBegin = i * antsAmountPerThread;
-                int rangeEnd = (i != threadsAmount - 1)? rangeBegin + antsAmountPerThread : colonySize;
-
-                threads[i] = thread([rangeBegin, rangeEnd, this] {
-                    for (int j = rangeBegin; j < rangeEnd; j++) {
-                        for (int i = 2; i < edges.size(); i++) {
-                            colony[j].addNewVertex(choseVertexByProbability(colony[j], alpha, beta));
-                        }
-                    }
-                });
-            }
-
-            for (int i = 0; i < threadsAmount; i++)
-            {
-                if (threads[i].joinable()) {
-                    threads[i].join();
+            for (int x = 0; x < colonySize; x++) {
+                for (int i = 2; i < edges.size(); i++) {
+                    colony[x].addNewVertex(choseVertexByProbability(colony[x], alpha, beta));
                 }
             }
-
             //evaporation
             evaporatePheromoneDAS(1, 0.1, colony);
             colony.resize(0);
@@ -253,6 +226,6 @@ namespace CPU {
 
         //Divide value as there is high probability that this is not even close 
         //to the optimal value
-        return calculateSolutionCost(solution) * 0.6f;
+        return calculateSolutionCost(solution) * 0,6;
     }
 }

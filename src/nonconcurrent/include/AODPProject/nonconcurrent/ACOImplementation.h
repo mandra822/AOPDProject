@@ -3,11 +3,11 @@
 #include "VertexProbability.h"
 #include <algorithm>
 
-namespace CPU {
+namespace NONCONCURRENT {
     class ACOImplementation {
     private:
-        vector<vector<int> > edges;
-        vector<vector<float> > pheromoneMatrix;
+        vector<vector<int>> edges;
+        vector<vector<float>> pheromoneMatrix;
         vector<Ant> colony;
         vector<int> result;
         vector<int> tempResult;
@@ -27,7 +27,7 @@ namespace CPU {
         void initializePheromoneMatrix(int aproximatedSolutionCost);
         float calculateApproximatedSolutionCost();
     public: 
-        void init(int startingVertex, vector<vector<int> > edges, float alpha, float beta, int numberOfVertexes, int colonySize);
+        void init(int startingVertex, vector<vector<int>> edges, float alpha, float beta, int numberOfVertexes, int colonySize);
         vector<int> runAcoAlgorith(int numberOfIterations);
         void evaporatePheromoneDAS(float Qdens, float pheromoneEvaporationRate, vector<Ant> colony);
         int calculateSolutionCost(vector<int> solution);

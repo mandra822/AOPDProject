@@ -2,8 +2,7 @@
 #include <vector>
 
 using namespace std;
-
-namespace CPU {
+namespace NONCONCURRENT {
     class Ant
     {	
 

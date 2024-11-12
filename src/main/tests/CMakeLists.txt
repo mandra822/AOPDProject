@@ -8,6 +8,7 @@ target_link_libraries(main_module_test#${PROJECT_NAME}_alisp_test
     project_warnings
     utils_module
     cpu_module
+    nonconcurrent_module
     Catch2::Catch2WithMain
     )
 target_include_directories(main_module_test#${PROJECT_NAME}_alisp_test
