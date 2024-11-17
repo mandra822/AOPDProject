@@ -1,4 +1,5 @@
 ﻿#include "AODPProject/nonconcurrent/ACOImplementation.h"
+#include <cmath>
 
 namespace NONCONCURRENT {
     float ACOImplementation::calculateDenominator(Ant ant, int lastVertex, float alpha, float beta)
@@ -12,9 +13,9 @@ namespace NONCONCURRENT {
 
             // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVertex][i] != 0) { 
-                denominator += pow(pheromoneMatrix[lastVertex][i], alpha) * pow(((float)1 / edges[lastVertex][i]), beta); }
+                denominator += std::pow(pheromoneMatrix[lastVertex][i], alpha) * std::pow(((float)1 / edges[lastVertex][i]), beta); }
             else {
-                denominator += pow(pheromoneMatrix[lastVertex][i], alpha) * pow(((float)1 / 0.1), beta);
+                denominator += std::pow(pheromoneMatrix[lastVertex][i], alpha) * std::pow(((float)1 / 0.1), beta);
             }
         }
 
@@ -39,10 +40,10 @@ namespace NONCONCURRENT {
             // (Tij)^(alpha) * (Nij)^Beta, where Tij -> pheromoneMatrix[i][j] and Nij -> 1/Lij [cryterium visibility] -> Lij = length, cost so adjencyMatrix
             // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVisitedVertex][i] != 0) {
-                nominator = (float)pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * pow((float)1 / edges[lastVisitedVertex][i], beta);
+                nominator = (float)std::pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * std::pow((float)1 / edges[lastVisitedVertex][i], beta);
             } 
             else {
-                nominator = (float)pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * pow((float)1 / 0.1, beta);
+                nominator = (float)std::pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * std::pow((float)1 / 0.1, beta);
             }
             probability = nominator / denominator;
 
