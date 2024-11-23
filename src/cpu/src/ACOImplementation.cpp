@@ -65,7 +65,7 @@ namespace CPU {
         for (int i = 0; i < chances.size(); i++)	
         {
             cumulativeSum += chances[i].probability;
-            if (cumulativeSum > toss) return chances[i].vertex;
+            if (std::isnan(cumulativeSum) || cumulativeSum > toss) return chances[i].vertex;
         }
     }
 

@@ -1,6 +1,6 @@
 # setting up sources
-add_executable(gpu_module
-    src/main.cpp)
+add_library(gpu_module
+    src/ACOImplementation.cu)
 set_target_properties(gpu_module PROPERTIES
                             CUDA_SEPARABLE_COMPILATION ON)
 # setting up include directories

@@ -1,9 +1,4 @@
 4
-instances/rd100.tsp	
-100
-100
-7910
-0.2
 instances/gr17.tsp
 17
 100
@@ -18,6 +13,11 @@ instances/gr120.tsp
 120
 100
 6942
+0.2
+instances/rd100.tsp	
+100
+100
+7910
 0.2
 instances/gr137.tsp
 137
