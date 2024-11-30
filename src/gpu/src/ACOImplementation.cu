@@ -51,15 +51,11 @@ __device__ float calculateDenominator(
 
 __device__ int choseVertexByProbability(
     int* visitedVertexes, int visitedCount, int lastVisitedVertex, float alpha, float beta,
-    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes, curandState &state) {
+    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes, curandState &state, float* chances, int* vertices) {
 
     float probability, toss = curand_uniform_double(&state), nominator, denominator, cumulativeSum = 0.0f;
     denominator = calculateDenominator(visitedVertexes, visitedCount, lastVisitedVertex, pheromoneMatrix, edgesMatrix, numberOfVertexes, alpha, beta);
 
-    float* chances;
-    int* vertices;
-    cudaMalloc(&chances, numberOfVertexes * sizeof(int));
-    cudaMalloc(&vertices, numberOfVertexes * sizeof(int));
     int validVertexCount = 0;
 
     for (int i = 0; i < numberOfVertexes; i++) {
@@ -103,23 +99,32 @@ __device__ int choseVertexByProbability(
 
     for (int i = 0; i < validVertexCount; i++) {
         cumulativeSum += chances[i];
-        if (std::isnan(cumulativeSum) || cumulativeSum > toss) {
+        if (!(cumulativeSum == cumulativeSum) || cumulativeSum > toss) {
             auto res = vertices[i];
-            cudaFree(chances);
-            cudaFree(vertices);
             return res;
         }
     }
 
-    cudaFree(chances);
-    cudaFree(vertices);
     return -1; // Fallback in case of numerical issues
 }
 
 
 __global__ void findSolutions(int* solutionsPointer, float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
+
+    extern __shared__ int sharedInt[];
+    float* sharedFloat = (float*)(&sharedInt[blockDim.x * numberOfVertexes]);
+
+    
     int threadId = threadIdx.x + blockDim.x * blockIdx.x;
     if (threadId > numberOfVertexes * numberOfVertexes) return;
+
+    int* vertices = &sharedInt[numberOfVertexes * threadIdx.x]; 
+    float* chances = &sharedFloat[threadIdx.x * numberOfVertexes];
+
+    //float* chances;
+    //int* vertices;
+    //cudaMalloc(&chances, numberOfVertexes * sizeof(float));
+    //cudaMalloc(&vertices, numberOfVertexes * sizeof(int));
 
     curandState state;
     curand_init((unsigned long long)clock() + threadId, 0, 0, &state);
@@ -132,10 +137,13 @@ __global__ void findSolutions(int* solutionsPointer, float* pheromoneMatrix, int
     float alpha = 1.0f, beta = 3.0f; // Example parameters
     while (visitedCount < numberOfVertexes) {
         int lastVisitedVertex = solution[visitedCount - 1];
-        int nextVertex = choseVertexByProbability(solution, visitedCount, lastVisitedVertex, alpha, beta, pheromoneMatrix, edgesMatrix, numberOfVertexes, state);
+        int nextVertex = choseVertexByProbability(solution, visitedCount, lastVisitedVertex, alpha, beta, pheromoneMatrix, edgesMatrix, numberOfVertexes, state, chances, vertices);
         solution[visitedCount] = nextVertex;
         visitedCount++;
     }
+
+    //cudaFree(chances);
+    //cudaFree(vertices);
 }
 
 namespace GPU {
@@ -194,8 +202,20 @@ namespace GPU {
             cudaMemcpy(d_colony, h_colony, colonySize * sizeof(int**), cudaMemcpyHostToDevice);
             //cudaMalloc(&d_solutions, colonySize * sizeof(int));
             //cudaMemcpy(d_solutions, colony.data(), colony.size() * sizeof(int), cudaMemcpyHostToDevice);
+            int blockMaxSize = -1;
+            cudaDeviceGetAttribute(&blockMaxSize, cudaDevAttrMaxSharedMemoryPerBlock, 0);
+            //int threadsPerBlock = 8;
+            //int numberOfBlocks = colonySize/threadsPerBlock + 1;
+
+            //int sharedMemorySize = threadsPerBlock * numberOfVertexes * (sizeof(float) + sizeof(int));
+            int sharedMemorySize = blockMaxSize;
+            int threadsPerBlock =  sharedMemorySize / (numberOfVertexes * (sizeof(float) + sizeof(int)));
+            int numberOfBlocks = colonySize/threadsPerBlock + 1;
+
+            //sharedMemorySize += sizeof(int) - sharedMemorySize % sizeof(int);
+            printf("Colony size is: %d\nNumber of vertices: %d\nBlock max shared mem size: %d\nStarting Kernel on %d blocks each %d threads with %d bytes of shared memory\n", colonySize, numberOfVertexes, blockMaxSize, numberOfBlocks, threadsPerBlock, sharedMemorySize);
             //do dopracowania (1 oznacza ilosc blokow, 1024 ilosc watkow na blok)
-            findSolutions <<<1, colonySize>>> (d_colony, d_pheromoneMatrix, d_edges, numberOfVertexes);
+            findSolutions <<<numberOfBlocks, threadsPerBlock, sharedMemorySize>>> (d_colony, d_pheromoneMatrix, d_edges, numberOfVertexes);
             gpuErrchk( cudaDeviceSynchronize());
 
             //cudaMemcpy(colony.data(), d_solutions, colony.size() * sizeof(int), cudaMemcpyDeviceToHost);
