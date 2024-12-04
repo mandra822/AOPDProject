@@ -21,8 +21,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 __device__ float calculateDenominator(
-    int* visitedVertexes, int visitedCount, int lastVertex, float* pheromoneMatrix, int* edgesMatrix,
-    int numberOfVertexes, float alpha, float beta) {
+    int* visitedVertexes, int visitedCount, int lastVertex, float* probabilityResult,
+    int numberOfVertexes) {
 
     float denominator = 0;
 
@@ -37,24 +37,56 @@ __device__ float calculateDenominator(
         }
         if (isVisited || i == lastVertex) continue;
 
-        float edgeCost = edgesMatrix[lastVertex * numberOfVertexes + i];
-        if (edgeCost != 0) {
-            denominator += powf(pheromoneMatrix[lastVertex * numberOfVertexes + i], alpha) * powf(1.0f / edgeCost, beta);
-        }
-        else {
-            denominator += powf(pheromoneMatrix[lastVertex * numberOfVertexes + i], alpha) * powf(1.0f / 0.1f, beta);
-        }
+        denominator += probabilityResult[lastVertex*numberOfVertexes+i];
     }
 
     return denominator;
 }
 
+__global__ void calculateProbability(
+    float* resultProbability, 
+    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
+
+    int threadId = threadIdx.x + blockDim.x * blockIdx.x;
+    if (threadId > numberOfVertexes * numberOfVertexes) return;
+    float alpha = 1.0f, beta = 3.0f; // Example parameters
+
+    float edgeCost = edgesMatrix[threadId];
+    float nominator = 0;
+    if (edgeCost != 0) {
+        nominator = powf(pheromoneMatrix[threadId], alpha) * powf(1.0f / edgeCost, beta);
+    }
+    else {
+        nominator = powf(pheromoneMatrix[threadId], alpha) * powf(1.0f / 0.1f, beta);
+    }
+    resultProbability[threadId] = nominator;
+}
+
+__global__ void evapouratePheromoneD(float* pheromoneMatrix, float rate,int  numberOfVertexes){
+
+    int threadId = threadIdx.x + blockDim.x * blockIdx.x;
+    if (threadId > numberOfVertexes * numberOfVertexes) return;
+    pheromoneMatrix[threadId] *= rate;
+}
+__global__ void leavePheromone(float* pheromoneMatrix, int* edgesMatrix, int* ants, int numberOfVertexes, float Qcycl) {
+    
+    int threadId = threadIdx.x + blockDim.x * blockIdx.x;
+    if (threadId > numberOfVertexes * numberOfVertexes) return;
+    auto cost = 0;
+    for(auto i = 1; i < numberOfVertexes; i++) {
+        cost += edgesMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[i]];
+    }
+    for(auto i = 1; i < numberOfVertexes; i++) {
+        pheromoneMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[i]] += (float)Qcycl/cost;
+    }
+}
+
 __device__ int choseVertexByProbability(
     int* visitedVertexes, int visitedCount, int lastVisitedVertex, float alpha, float beta,
-    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes, curandState &state) {
+    float* resultProb, int numberOfVertexes, curandState &state) {
 
     float probability, toss = curand_uniform_double(&state), nominator, denominator, cumulativeSum = 0.0f;
-    denominator = calculateDenominator(visitedVertexes, visitedCount, lastVisitedVertex, pheromoneMatrix, edgesMatrix, numberOfVertexes, alpha, beta);
+    denominator = calculateDenominator(visitedVertexes, visitedCount, lastVisitedVertex, resultProb, numberOfVertexes);
 
     int validVertexCount = 0;
     int notVisited = -1;
@@ -69,13 +101,7 @@ __device__ int choseVertexByProbability(
         }
         if (isVisited || i == lastVisitedVertex) continue;
         else notVisited = i;
-        float edgeCost = edgesMatrix[lastVisitedVertex * numberOfVertexes + i];
-        if (edgeCost != 0) {
-            nominator = powf(pheromoneMatrix[lastVisitedVertex * numberOfVertexes + i], alpha) * powf(1.0f / edgeCost, beta);
-        }
-        else {
-            nominator = powf(pheromoneMatrix[lastVisitedVertex * numberOfVertexes + i], alpha) * powf(1.0f / 0.1f, beta);
-        }
+        nominator = resultProb[lastVisitedVertex * numberOfVertexes + i];
         probability = nominator / denominator;
 
         cumulativeSum += probability;
@@ -89,7 +115,7 @@ __device__ int choseVertexByProbability(
 }
 
 
-__global__ void findSolutions(int* solutionsPointer, float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
+__global__ void findSolutions(int* solutionsPointer, float* resultProb, int numberOfVertexes) {
 
     //extern __shared__ int sharedInt[];
     //float* sharedFloat = (float*)(&sharedInt[blockDim.x * numberOfVertexes]);
@@ -111,14 +137,16 @@ __global__ void findSolutions(int* solutionsPointer, float* pheromoneMatrix, int
 
     // Each thread handles one solution
     int* solution = &solutionsPointer[threadId * numberOfVertexes];
+    int lastVisitedVertex = (int)(curand_uniform(&state) * numberOfVertexes);
+    solution[0] = lastVisitedVertex;
 
     int visitedCount = 1;
 
     float alpha = 1.0f, beta = 3.0f; // Example parameters
     while (visitedCount < numberOfVertexes) {
-        int lastVisitedVertex = solution[visitedCount - 1];
-        int nextVertex = choseVertexByProbability(solution, visitedCount, lastVisitedVertex, alpha, beta, pheromoneMatrix, edgesMatrix, numberOfVertexes, state);
+        int nextVertex = choseVertexByProbability(solution, visitedCount, lastVisitedVertex, alpha, beta, resultProb, numberOfVertexes, state);
         solution[visitedCount] = nextVertex;
+        lastVisitedVertex = nextVertex;
         visitedCount++;
     }
 
@@ -162,29 +190,31 @@ namespace GPU {
         }
 
         float* d_pheromoneMatrix;
-        cudaMalloc(&d_pheromoneMatrix, flatPheromone.size() * sizeof(int));
-        cudaMemcpy(d_pheromoneMatrix, flatPheromone.data(), flatPheromone.size() * sizeof(int), cudaMemcpyHostToDevice);
+        cudaMalloc(&d_pheromoneMatrix, flatPheromone.size() * sizeof(float));
+        cudaMemcpy(d_pheromoneMatrix, flatPheromone.data(), flatPheromone.size() * sizeof(float), cudaMemcpyHostToDevice);
+
+        float* d_probMatrix;
+        cudaMalloc(&d_probMatrix, numberOfVertexes * numberOfVertexes * sizeof(float));
 
         int* d_colony;
         cudaMalloc(&d_colony, colonySize * edges.size() * sizeof(int));
 
+        int* h_colony = (int*)malloc(colonySize * edges.size() * sizeof(int));
         for (int j = 0; j < numberOfIterations; j++) {
-            int* h_colony = (int*)malloc(colonySize * edges.size() * sizeof(int));
             
-            for (int i = 0; i < colonySize; i++) {
+            /*for (int i = 0; i < colonySize; i++) {
                 while (startingVertexForAnt == startingVertex) {
                     startingVertexForAnt = rand() % edges.size();
                 }
                 h_colony[i*edges.size()] = startingVertex;
                 startingVertexForAnt = startingVertex;
-            }
+            }*/
             
-            cudaMemcpy(d_colony, h_colony, colonySize * sizeof(int**), cudaMemcpyHostToDevice);
+            //cudaMemcpy(d_colony, h_colony, colonySize * sizeof(int**), cudaMemcpyHostToDevice);
             //cudaMalloc(&d_solutions, colonySize * sizeof(int));
             //cudaMemcpy(d_solutions, colony.data(), colony.size() * sizeof(int), cudaMemcpyHostToDevice);
             int blockMaxSize = -1;
-            cudaDeviceGetAttribute(&blockMaxSize, cudaDevAttrMaxSharedMemoryPerBlock, 0);
-            int threadsPerBlock = 128;
+            int threadsPerBlock = 32;
             //int numberOfBlocks = colonySize/threadsPerBlock + 1;
 
             //int sharedMemorySize = threadsPerBlock * numberOfVertexes * (sizeof(float) + sizeof(int));
@@ -192,26 +222,29 @@ namespace GPU {
             //int threadsPerBlock =  sharedMemorySize / (numberOfVertexes * (sizeof(float) + sizeof(int)));
             int numberOfBlocks = colonySize/threadsPerBlock + 1;
 
+
             //int* antsData;
             //cudaMalloc(&antsData, numberOfVertexes * colonySize * (sizeof(float) + sizeof(int)));
 
             //sharedMemorySize += sizeof(int) - sharedMemorySize % sizeof(int);
             //printf("Colony size is: %d\nNumber of vertices: %d\nBlock max shared mem size: %d\nStarting Kernel on %d blocks each %d threads with %d bytes of shared memory\n", colonySize, numberOfVertexes, blockMaxSize, numberOfBlocks, threadsPerBlock, sharedMemorySize);
             //do dopracowania (1 oznacza ilosc blokow, 1024 ilosc watkow na blok)
-            findSolutions <<<numberOfBlocks, threadsPerBlock>>> (d_colony, d_pheromoneMatrix, d_edges, numberOfVertexes );
-            gpuErrchk( cudaDeviceSynchronize());
+            calculateProbability<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>> (d_probMatrix, d_pheromoneMatrix, d_edges, numberOfVertexes );
+            findSolutions <<<numberOfBlocks, threadsPerBlock>>> (d_colony, d_probMatrix, numberOfVertexes );
+            evapouratePheromoneD<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>>(d_pheromoneMatrix, 0.1, numberOfVertexes);
+            leavePheromone <<<numberOfBlocks, threadsPerBlock>>> (d_pheromoneMatrix,  d_edges, d_colony, numberOfVertexes, 1.0); 
 
             //cudaFree(antsData);
             //cudaMemcpy(colony.data(), d_solutions, colony.size() * sizeof(int), cudaMemcpyDeviceToHost);
             //TUTAJ są kopiuowane tylko wskaźniki do tablic z rozwiazaniami mrówek a nie same ścieżki z mrówkami
-            cudaMemcpy(h_colony, d_colony, edges.size() * colonySize * sizeof(int), cudaMemcpyDeviceToHost);
 
             
 
 
             //evaporation
-            evaporatePheromoneCAS(1, 0.1, h_colony);
         }
+        cudaMemcpy(h_colony, d_colony, edges.size() * colonySize * sizeof(int), cudaMemcpyDeviceToHost);
+        evaporatePheromoneCAS(1, 0.1, h_colony);
         return result;
     }
 
