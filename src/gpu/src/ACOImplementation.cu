@@ -21,23 +21,13 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 __device__ float calculateDenominator(
-    int* visitedVertexes, int visitedCount, int lastVertex, float* probabilityResult,
+    float* chances, int visitedCount,
     int numberOfVertexes) {
 
     float denominator = 0;
 
-    for (int i = 1; i < numberOfVertexes; i++) {
-        // Check if vertex is visited
-        bool isVisited = false;
-        for (int j = 0; j < visitedCount; j++) {
-            if (visitedVertexes[j] == i) {
-                isVisited = true;
-                break;
-            }
-        }
-        if (isVisited || i == lastVertex) continue;
-
-        denominator += probabilityResult[lastVertex*numberOfVertexes+i];
+    for (int i = visitedCount; i < numberOfVertexes; i++) {
+        denominator += chances[i];
     }
 
     return denominator;
@@ -68,61 +58,72 @@ __global__ void evapouratePheromoneD(float* pheromoneMatrix, float rate,int  num
     if (threadId > numberOfVertexes * numberOfVertexes) return;
     pheromoneMatrix[threadId] *= rate;
 }
-__global__ void leavePheromone(float* pheromoneMatrix, int* edgesMatrix, int* ants, int numberOfVertexes, float Qcycl) {
+__global__ void leavePheromone(float* pheromoneMatrix, int* edgesMatrix, int* ants, int numberOfVertexes, float Qcycl, int* costs, int colonySize) {
     
     int threadId = threadIdx.x + blockDim.x * blockIdx.x;
-    if (threadId > numberOfVertexes * numberOfVertexes) return;
+    if (threadId > colonySize) return;
     auto cost = 0;
     for(auto i = 1; i < numberOfVertexes; i++) {
-        cost += edgesMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[i]];
+        cost += edgesMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[threadId * numberOfVertexes +i]];
     }
+    costs[threadId] = cost;
     for(auto i = 1; i < numberOfVertexes; i++) {
-        pheromoneMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[i]] += (float)Qcycl/cost;
+        pheromoneMatrix[ants[threadId * numberOfVertexes +i-1] * numberOfVertexes + ants[i]] += (float)Qcycl/(float)cost;
     }
 }
 
 __device__ int choseVertexByProbability(
-    int* visitedVertexes, int visitedCount, int lastVisitedVertex, float alpha, float beta,
-    float* resultProb, int numberOfVertexes, curandState &state) {
+    int* sharedInt, float* chances, int visitedCount, int numberOfVertexes, curandState &state) {
 
-    float probability, toss = curand_uniform_double(&state), nominator, denominator, cumulativeSum = 0.0f;
-    denominator = calculateDenominator(visitedVertexes, visitedCount, lastVisitedVertex, resultProb, numberOfVertexes);
+    float toss = curand_uniform_double(&state), cumulativeSum = 0.0f;
 
-    int validVertexCount = 0;
-    int notVisited = -1;
+    for (int i = visitedCount; i < numberOfVertexes; i++) {
 
-    for (int i = 0; i < numberOfVertexes; i++) {
-        bool isVisited = false;
-        for (int j = 0; j < visitedCount; j++) {
-            if (visitedVertexes[j] == i) {
-                isVisited = true;
-                break;
-            }
-        }
-        if (isVisited || i == lastVisitedVertex) continue;
-        else notVisited = i;
-        nominator = resultProb[lastVisitedVertex * numberOfVertexes + i];
-        probability = nominator / denominator;
-
-        cumulativeSum += probability;
+        cumulativeSum += chances[i];
         if (!(cumulativeSum == cumulativeSum) || cumulativeSum > toss) {
-            return i;
+            return sharedInt[i];
         }
-        validVertexCount++;
     }
 
-    return notVisited; // Fallback in case of numerical issues
+    return sharedInt[numberOfVertexes - 1]; // Fallback in case of numerical issues
 }
 
+__device__ void calculateNominatorToShared(
+    int* vertexes,
+    float* chances, 
+    int ownVertex,
+    int position,
+    int prevVertex,
+    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
 
-__global__ void findSolutions(int* solutionsPointer, float* resultProb, int numberOfVertexes) {
+    float alpha = 1.0f, beta = 3.0f; // Example parameters
 
-    //extern __shared__ int sharedInt[];
-    //float* sharedFloat = (float*)(&sharedInt[blockDim.x * numberOfVertexes]);
+    int edgeCost = edgesMatrix[ownVertex];
+    float nominator = 0.0f;
+    if (edgeCost != 0) {
+        nominator = (float)std::pow(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) * std::pow(1.0f / edgeCost, beta);
+    }
+    else {
+        nominator = (float)std::pow(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) * std::pow(1.0f / 0.1f, beta);
+    }
+    chances[position] = nominator;
+    vertexes[position] = ownVertex;
+}
+__device__ void normalize(
+    float* chances,
+    float* denominator,
+    int position
+        ){
+    chances[position] /= *denominator;
+}
+__global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* pheromoneMatrix, int numberOfVertexes) {
 
-    
-    int threadId = threadIdx.x + blockDim.x * blockIdx.x;
-    if (threadId > numberOfVertexes * numberOfVertexes) return;
+    extern __shared__ int sharedInt[];
+    size_t shOffset = (sizeof(float)/sizeof(int)*(numberOfVertexes));
+    float* sharedFloat = (float*)(&sharedInt[shOffset]);
+    float* denominator = &sharedFloat[numberOfVertexes];
+
+    int threadId = blockIdx.x;
 
     //int* vertices = &sharedInt[numberOfVertexes * threadId]; 
     //float* chances = &sharedFloat[threadId * numberOfVertexes];
@@ -139,15 +140,49 @@ __global__ void findSolutions(int* solutionsPointer, float* resultProb, int numb
     int* solution = &solutionsPointer[threadId * numberOfVertexes];
     int lastVisitedVertex = (int)(curand_uniform(&state) * numberOfVertexes);
     solution[0] = lastVisitedVertex;
+    sharedInt[0] = lastVisitedVertex;
 
     int visitedCount = 1;
 
+    auto skip = false;
+ 
+    if (threadIdx.x > numberOfVertexes + 1 || threadId > numberOfVertexes) skip = true;
+    auto position = threadIdx.x;
+    auto ownVertex = threadIdx.x;
     float alpha = 1.0f, beta = 3.0f; // Example parameters
+    int nextVertex;
     while (visitedCount < numberOfVertexes) {
-        int nextVertex = choseVertexByProbability(solution, visitedCount, lastVisitedVertex, alpha, beta, resultProb, numberOfVertexes, state);
-        solution[visitedCount] = nextVertex;
+        if (threadIdx.x != 0 && !skip) {
+            //printf("N1 thread %d block %d\n", threadIdx.x, blockIdx.x);
+            auto prev = sharedInt[visitedCount-1];
+            if (ownVertex == prev) skip = true;
+            else if (prev > ownVertex) position++;
+            if (!skip) calculateNominatorToShared(sharedInt, sharedFloat, ownVertex, position, prev, pheromoneMatrix, edgesMatrix, numberOfVertexes);
+        }
+        __syncthreads();
+        if (threadIdx.x == 0 && !skip) {
+            //printf("A1 thread %d block %d\n", threadIdx.x), blockIdx.x;
+            *denominator = calculateDenominator( sharedFloat, visitedCount, numberOfVertexes);
+        }
+        __syncthreads();
+        if (threadIdx.x != 0 && !skip) {
+            //printf("N2 thread %d block %d\n", threadIdx.x), blockIdx.x;
+            normalize(sharedFloat, denominator, position);
+        }
+        __syncthreads();
+        if (threadIdx.x == 0 && !skip) {
+            //printf("A2 thread %d block %d\n", threadIdx.x), blockIdx.x;
+            nextVertex = choseVertexByProbability(sharedInt, sharedFloat, visitedCount, numberOfVertexes, state);
+            sharedInt[visitedCount] = nextVertex;
+        }
+        __syncthreads();
         lastVisitedVertex = nextVertex;
         visitedCount++;
+
+        if (threadIdx.x == 0 && !skip) {
+            //printf("A3 thread %d block %d\n", threadIdx.x, blockIdx.x);
+            solution[visitedCount] = nextVertex;
+        }
     }
 
     //cudaFree(chances);
@@ -199,6 +234,13 @@ namespace GPU {
         int* d_colony;
         cudaMalloc(&d_colony, colonySize * edges.size() * sizeof(int));
 
+        int* h_costs = (int*)malloc(colonySize * sizeof(int));
+        for (auto i = 0; i < numberOfVertexes; i++) {
+            h_costs[i] = i;
+        }
+        int* d_costs;
+        cudaMalloc(&d_costs, colonySize * sizeof(int));
+
         int* h_colony = (int*)malloc(colonySize * edges.size() * sizeof(int));
         for (int j = 0; j < numberOfIterations; j++) {
             
@@ -229,22 +271,30 @@ namespace GPU {
             //sharedMemorySize += sizeof(int) - sharedMemorySize % sizeof(int);
             //printf("Colony size is: %d\nNumber of vertices: %d\nBlock max shared mem size: %d\nStarting Kernel on %d blocks each %d threads with %d bytes of shared memory\n", colonySize, numberOfVertexes, blockMaxSize, numberOfBlocks, threadsPerBlock, sharedMemorySize);
             //do dopracowania (1 oznacza ilosc blokow, 1024 ilosc watkow na blok)
-            calculateProbability<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>> (d_probMatrix, d_pheromoneMatrix, d_edges, numberOfVertexes );
-            findSolutions <<<numberOfBlocks, threadsPerBlock>>> (d_colony, d_probMatrix, numberOfVertexes );
+            findSolutions <<<colonySize, numberOfVertexes + 1, numberOfVertexes * (sizeof(float) + sizeof(int)) + sizeof(float) >>> (d_colony, d_edges, d_pheromoneMatrix, numberOfVertexes );
             evapouratePheromoneD<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>>(d_pheromoneMatrix, 0.1, numberOfVertexes);
-            leavePheromone <<<numberOfBlocks, threadsPerBlock>>> (d_pheromoneMatrix,  d_edges, d_colony, numberOfVertexes, 1.0); 
+            leavePheromone <<<numberOfBlocks, threadsPerBlock>>> (d_pheromoneMatrix,  d_edges, d_colony, numberOfVertexes, 0.4, d_costs, colonySize); 
 
             //cudaFree(antsData);
             //cudaMemcpy(colony.data(), d_solutions, colony.size() * sizeof(int), cudaMemcpyDeviceToHost);
             //TUTAJ są kopiuowane tylko wskaźniki do tablic z rozwiazaniami mrówek a nie same ścieżki z mrówkami
 
+            cudaMemcpy(h_costs, d_costs, colonySize * sizeof(int), cudaMemcpyDeviceToHost);
+            int bestIndex = -1;
+            for(auto i = 0; i < colonySize; i++) {
+                if(h_costs[i] < minCost) {
+                    minCost = h_costs[i];
+                    bestIndex = i;
+                }
+            }
+            if (bestIndex != -1) {
+                cudaMemcpy(result, &d_colony[bestIndex * numberOfVertexes], numberOfVertexes * sizeof(int), cudaMemcpyDeviceToHost);
+            }
             
 
 
             //evaporation
         }
-        cudaMemcpy(h_colony, d_colony, edges.size() * colonySize * sizeof(int), cudaMemcpyDeviceToHost);
-        evaporatePheromoneCAS(1, 0.1, h_colony);
         return result;
     }
 

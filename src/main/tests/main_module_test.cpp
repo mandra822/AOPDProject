@@ -36,6 +36,11 @@ TEST_CASE( "GPU test", "[gpu][concurrent][!mayfail]" ) {
                     });
                     THEN("Getting results") {
                         std::cout<<"\nGot solution for file " << file.fileName << "\nBest solution: " << file.bestSolution << "\nComputed solution: "<< aco.calculateSolutionCost(result) << "\nIn time: " << elapsedMiliseconds.count() << " ms\n";
+                        std::cout<<"\nPath ";
+                        for (auto i = 0; i < numberOfVertexes; i++) {
+                            std::cout<<result[i] << ", ";
+                        }
+                        std::cout<<'\n';
                         auto error = std::abs(static_cast<float>(aco.calculateSolutionCost(result) - file.bestSolution) / file.bestSolution);
                         std::cout<< "Error: " << error << "\nAccepted error: " << file.acceptedError<< '\n';
                         REQUIRE( error  < file.acceptedError);
