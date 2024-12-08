@@ -21,10 +21,10 @@ TEST_CASE( "GPU test", "[gpu][concurrent][!mayfail]" ) {
                 std::vector<std::vector<int> > edges {}; 
                 fileManager.loadFromFile(edges, numberOfVertexes, file.fileName);
 
-                int startingVertex = 0;  // Zaczynamy od wierzcho³ka 0
+                int startingVertex = 0;
 
-                float alpha = 1.5;    // Wp³yw feromonów
-                float beta = 3.0;     // Wp³yw widocznoœci (odwrotnoœci kosztu)
+                float alpha = 1.5;
+                float beta = 3.0;
                 int colonySize = file.colonySize;
                 int numberOfIterations = file.numberOfIterations;
                 GPU::ACOImplementation aco;
@@ -61,10 +61,10 @@ TEST_CASE( "Concurrent cpu test", "[cpu][concurrent][!mayfail]" ) {
                 std::vector<std::vector<int> > edges {}; 
                 fileManager.loadFromFile(edges, numberOfVertexes, file.fileName);
 
-                int startingVertex = 0;  // Zaczynamy od wierzcho³ka 0
+                int startingVertex = 0;
 
-                float alpha = 1.5;    // Wp³yw feromonów
-                float beta = 3.0;     // Wp³yw widocznoœci (odwrotnoœci kosztu)
+                float alpha = 1.5;
+                float beta = 3.0;
                 int colonySize = file.colonySize;
                 int numberOfIterations = file.numberOfIterations;
                 CPU::ACOImplementation aco;
@@ -96,10 +96,10 @@ TEST_CASE( "Non-concurrent cpu test", "[cpu][nonconcurrent][!mayfail]" ) {
                 std::vector<std::vector<int> > edges {}; 
                 fileManager.loadFromFile(edges, numberOfVertexes, file.fileName);
 
-                int startingVertex = 0;  // Zaczynamy od wierzcho³ka 0
+                int startingVertex = 0;
 
-                float alpha = 1.5;    // Wp³yw feromonów
-                float beta = 3.0;     // Wp³yw widocznoœci (odwrotnoœci kosztu)
+                float alpha = 1.5;
+                float beta = 3.0;
                 int colonySize = file.colonySize;
                 int numberOfIterations = file.numberOfIterations;
                 NONCONCURRENT::ACOImplementation aco;

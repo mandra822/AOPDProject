@@ -39,7 +39,7 @@ __global__ void calculateProbability(
 
     int threadId = threadIdx.x + blockDim.x * blockIdx.x;
     if (threadId > numberOfVertexes * numberOfVertexes) return;
-    float alpha = 1.0f, beta = 3.0f; // Example parameters
+    float alpha = 1.0f, beta = 3.0f;
 
     float edgeCost = edgesMatrix[threadId];
     float nominator = 0;
@@ -85,7 +85,7 @@ __device__ int choseVertexByProbability(
         }
     }
 
-    return sharedInt[numberOfVertexes - 1]; // Fallback in case of numerical issues
+    return sharedInt[numberOfVertexes - 1];
 }
 
 __device__ void calculateNominatorToShared(
@@ -96,7 +96,7 @@ __device__ void calculateNominatorToShared(
     int prevVertex,
     float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
 
-    float alpha = 1.0f, beta = 3.0f; // Example parameters
+    float alpha = 1.0f, beta = 3.0f;
 
     int edgeCost = edgesMatrix[ownVertex];
     float nominator = 0.0f;
@@ -125,18 +125,9 @@ __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* ph
 
     int threadId = blockIdx.x;
 
-    //int* vertices = &sharedInt[numberOfVertexes * threadId]; 
-    //float* chances = &sharedFloat[threadId * numberOfVertexes];
-
-    //float* chances;
-    //int* vertices;
-    //cudaMalloc(&chances, numberOfVertexes * sizeof(float));
-    //cudaMalloc(&vertices, numberOfVertexes * sizeof(int));
-
     curandState state;
     curand_init((unsigned long long)clock() + threadId, 0, 0, &state);
 
-    // Each thread handles one solution
     int* solution = &solutionsPointer[threadId * numberOfVertexes];
     int lastVisitedVertex = (int)(curand_uniform(&state) * numberOfVertexes);
     solution[0] = lastVisitedVertex;
@@ -149,11 +140,10 @@ __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* ph
     if (threadIdx.x > numberOfVertexes + 1 || threadId > numberOfVertexes) skip = true;
     auto position = threadIdx.x;
     auto ownVertex = threadIdx.x;
-    float alpha = 1.0f, beta = 3.0f; // Example parameters
+    float alpha = 1.0f, beta = 3.0f;
     int nextVertex;
     while (visitedCount < numberOfVertexes) {
         if (threadIdx.x != 0 && !skip) {
-            //printf("N1 thread %d block %d\n", threadIdx.x, blockIdx.x);
             auto prev = sharedInt[visitedCount-1];
             if (ownVertex == prev) skip = true;
             else if (prev > ownVertex) position++;
@@ -161,17 +151,14 @@ __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* ph
         }
         __syncthreads();
         if (threadIdx.x == 0 && !skip) {
-            //printf("A1 thread %d block %d\n", threadIdx.x), blockIdx.x;
             *denominator = calculateDenominator( sharedFloat, visitedCount, numberOfVertexes);
         }
         __syncthreads();
         if (threadIdx.x != 0 && !skip) {
-            //printf("N2 thread %d block %d\n", threadIdx.x), blockIdx.x;
             normalize(sharedFloat, denominator, position);
         }
         __syncthreads();
         if (threadIdx.x == 0 && !skip) {
-            //printf("A2 thread %d block %d\n", threadIdx.x), blockIdx.x;
             nextVertex = choseVertexByProbability(sharedInt, sharedFloat, visitedCount, numberOfVertexes, state);
             sharedInt[visitedCount] = nextVertex;
         }
@@ -180,13 +167,10 @@ __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* ph
         visitedCount++;
 
         if (threadIdx.x == 0 && !skip) {
-            //printf("A3 thread %d block %d\n", threadIdx.x, blockIdx.x);
             solution[visitedCount] = nextVertex;
         }
     }
 
-    //cudaFree(chances);
-    //cudaFree(vertices);
 }
 
 namespace GPU {
@@ -209,7 +193,6 @@ namespace GPU {
         int chosenVertex;
 
 
-        //Copy eges and pheromone matrix into GPU memory
         std::vector<int> flatEdges;
         for (const auto& row : edges) {
             flatEdges.insert(flatEdges.end(), row.begin(), row.end());
@@ -243,41 +226,14 @@ namespace GPU {
 
         int* h_colony = (int*)malloc(colonySize * edges.size() * sizeof(int));
         for (int j = 0; j < numberOfIterations; j++) {
-            
-            /*for (int i = 0; i < colonySize; i++) {
-                while (startingVertexForAnt == startingVertex) {
-                    startingVertexForAnt = rand() % edges.size();
-                }
-                h_colony[i*edges.size()] = startingVertex;
-                startingVertexForAnt = startingVertex;
-            }*/
-            
-            //cudaMemcpy(d_colony, h_colony, colonySize * sizeof(int**), cudaMemcpyHostToDevice);
-            //cudaMalloc(&d_solutions, colonySize * sizeof(int));
-            //cudaMemcpy(d_solutions, colony.data(), colony.size() * sizeof(int), cudaMemcpyHostToDevice);
             int blockMaxSize = -1;
-            int threadsPerBlock = 32;
-            //int numberOfBlocks = colonySize/threadsPerBlock + 1;
-
-            //int sharedMemorySize = threadsPerBlock * numberOfVertexes * (sizeof(float) + sizeof(int));
+            int threadsPerBlock = 32;    
             int sharedMemorySize = blockMaxSize;
-            //int threadsPerBlock =  sharedMemorySize / (numberOfVertexes * (sizeof(float) + sizeof(int)));
             int numberOfBlocks = colonySize/threadsPerBlock + 1;
 
-
-            //int* antsData;
-            //cudaMalloc(&antsData, numberOfVertexes * colonySize * (sizeof(float) + sizeof(int)));
-
-            //sharedMemorySize += sizeof(int) - sharedMemorySize % sizeof(int);
-            //printf("Colony size is: %d\nNumber of vertices: %d\nBlock max shared mem size: %d\nStarting Kernel on %d blocks each %d threads with %d bytes of shared memory\n", colonySize, numberOfVertexes, blockMaxSize, numberOfBlocks, threadsPerBlock, sharedMemorySize);
-            //do dopracowania (1 oznacza ilosc blokow, 1024 ilosc watkow na blok)
             findSolutions <<<colonySize, numberOfVertexes + 1, numberOfVertexes * (sizeof(float) + sizeof(int)) + sizeof(float) >>> (d_colony, d_edges, d_pheromoneMatrix, numberOfVertexes );
             evapouratePheromoneD<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>>(d_pheromoneMatrix, 0.1, numberOfVertexes);
             leavePheromone <<<numberOfBlocks, threadsPerBlock>>> (d_pheromoneMatrix,  d_edges, d_colony, numberOfVertexes, 0.4, d_costs, colonySize); 
-
-            //cudaFree(antsData);
-            //cudaMemcpy(colony.data(), d_solutions, colony.size() * sizeof(int), cudaMemcpyDeviceToHost);
-            //TUTAJ są kopiuowane tylko wskaźniki do tablic z rozwiazaniami mrówek a nie same ścieżki z mrówkami
 
             cudaMemcpy(h_costs, d_costs, colonySize * sizeof(int), cudaMemcpyDeviceToHost);
             int bestIndex = -1;
@@ -290,10 +246,6 @@ namespace GPU {
             if (bestIndex != -1) {
                 cudaMemcpy(result, &d_colony[bestIndex * numberOfVertexes], numberOfVertexes * sizeof(int), cudaMemcpyDeviceToHost);
             }
-            
-
-
-            //evaporation
         }
         return result;
     }
@@ -320,7 +272,6 @@ namespace GPU {
         for (auto ant = 0; ant < colonySize; ant++)
         {
             antSolution = &colony[ant * edges.size()];
-            //if(containsOnlyCities(antSolution, numberOfVertexes)) continue;
             cost = calculateSolutionCost(antSolution);
             if (cost < minCost)
             {
@@ -389,13 +340,11 @@ namespace GPU {
 
         for (int i = 0; i < numberOfVertexes; i++)
         {
-            randIndexI = rand() % numberOfVertexes;	// toss index (0 , solution-1)
+            randIndexI = rand() % numberOfVertexes;
             randIndexJ = rand() % numberOfVertexes;
             std::swap(solution[randIndexI], solution[randIndexJ]);
         }
 
-        //Divide value as there is high probability that this is not even close 
-        //to the optimal value
         return calculateSolutionCost(solution) * 0.6f;
     }
 }

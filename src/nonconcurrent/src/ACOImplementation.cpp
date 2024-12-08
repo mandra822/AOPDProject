@@ -11,7 +11,6 @@ namespace NONCONCURRENT {
             if (find(ant.visitedVertexes.begin(), ant.visitedVertexes.end(), i) != ant.visitedVertexes.end()) continue; 
             if (i == lastVertex) continue;
 
-            // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVertex][i] != 0) { 
                 denominator += std::pow(pheromoneMatrix[lastVertex][i], alpha) * std::pow(((float)1 / edges[lastVertex][i]), beta); }
             else {
@@ -36,9 +35,6 @@ namespace NONCONCURRENT {
             if (find(ant.visitedVertexes.begin(), ant.visitedVertexes.end(), i) != ant.visitedVertexes.end()) continue; 
             if (i == lastVisitedVertex) continue;
 
-            // if not visited, calculate probability
-            // (Tij)^(alpha) * (Nij)^Beta, where Tij -> pheromoneMatrix[i][j] and Nij -> 1/Lij [cryterium visibility] -> Lij = length, cost so adjencyMatrix
-            // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVisitedVertex][i] != 0) {
                 nominator = (float)std::pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * std::pow((float)1 / edges[lastVisitedVertex][i], beta);
             } 
@@ -95,7 +91,6 @@ namespace NONCONCURRENT {
                     colony[x].addNewVertex(choseVertexByProbability(colony[x], alpha, beta));
                 }
             }
-            //evaporation
             evaporatePheromoneDAS(1, 0.1, colony);
             colony.resize(0);
         }
@@ -220,13 +215,11 @@ namespace NONCONCURRENT {
 
         for (int i = 0; i < numberOfVertexes; i++)
         {
-            randIndexI = rand() % solution.size();	// toss index (0 , solution-1)
+            randIndexI = rand() % solution.size();
             randIndexJ = rand() % solution.size();
             swap(solution[randIndexI], solution[randIndexJ]);
         }
 
-        //Divide value as there is high probability that this is not even close 
-        //to the optimal value
         return calculateSolutionCost(solution) * 0,6;
     }
 }
