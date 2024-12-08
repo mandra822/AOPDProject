@@ -33,31 +33,13 @@ __device__ float calculateDenominator(
     return denominator;
 }
 
-__global__ void calculateProbability(
-    float* resultProbability, 
-    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
-
-    int threadId = threadIdx.x + blockDim.x * blockIdx.x;
-    if (threadId > numberOfVertexes * numberOfVertexes) return;
-    float alpha = 1.0f, beta = 3.0f;
-
-    float edgeCost = edgesMatrix[threadId];
-    float nominator = 0;
-    if (edgeCost != 0) {
-        nominator = powf(pheromoneMatrix[threadId], alpha) * powf(1.0f / edgeCost, beta);
-    }
-    else {
-        nominator = powf(pheromoneMatrix[threadId], alpha) * powf(1.0f / 0.1f, beta);
-    }
-    resultProbability[threadId] = nominator;
-}
-
 __global__ void evapouratePheromoneD(float* pheromoneMatrix, float rate,int  numberOfVertexes){
 
     int threadId = threadIdx.x + blockDim.x * blockIdx.x;
     if (threadId > numberOfVertexes * numberOfVertexes) return;
     pheromoneMatrix[threadId] *= rate;
 }
+
 __global__ void leavePheromone(float* pheromoneMatrix, int* edgesMatrix, int* ants, int numberOfVertexes, float Qcycl, int* costs, int colonySize) {
     
     int threadId = threadIdx.x + blockDim.x * blockIdx.x;
@@ -94,21 +76,42 @@ __device__ void calculateNominatorToShared(
     int ownVertex,
     int position,
     int prevVertex,
-    float* pheromoneMatrix, int* edgesMatrix, int numberOfVertexes) {
+    float* pheromoneMatrix, 
+    int* edgesMatrix, 
+    int numberOfVertexes) 
+{
+    /**
+        Ustalanie współczynników wagi feromonu (alpha) i heurystyki (beta)
+    */
+    float alpha = 1.0f;
+    float beta = 3.0f;
 
-    float alpha = 1.0f, beta = 3.0f;
-
+    /**
+        Pobranie kosztu krawędzi łączącej prevVertex z ownVertex
+    */
+        
     int edgeCost = edgesMatrix[ownVertex];
+
     float nominator = 0.0f;
+
     if (edgeCost != 0) {
-        nominator = (float)std::pow(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) * std::pow(1.0f / edgeCost, beta);
+        nominator = (float)powf(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) 
+                    * powf(1.0f / edgeCost, beta);
+    } else {
+        nominator = (float)powf(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) 
+                    * powf(1.0f / 0.1f, beta);
     }
-    else {
-        nominator = (float)std::pow(pheromoneMatrix[prevVertex * numberOfVertexes + ownVertex], alpha) * std::pow(1.0f / 0.1f, beta);
-    }
+
+    // Zapis obliczonej wartości nominatora do tablicy chances
     chances[position] = nominator;
+
+    /**  
+    Zapis indeksu bieżącego wierzchołka do tablicy vertexes,
+    aby później wiedzieć, który wierzchołek odpowiada danej wartości nominatora.
+    */
     vertexes[position] = ownVertex;
 }
+
 __device__ void normalize(
     float* chances,
     float* denominator,
@@ -116,17 +119,33 @@ __device__ void normalize(
         ){
     chances[position] /= *denominator;
 }
+
 __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* pheromoneMatrix, int numberOfVertexes) {
+    /**
+    *   Wydzielenie współdzielonej pamięci;
+    *   Obliczenie offsetu potrzebnego do poprawnego zarządzania pamiecią - w pamięci współdzielonej chcemy
+    *   mieć zarówno zmienne typu int jak i float. Z powodu że typy te różnią się rozmiarem, musimy używać offsetu :))));
+    *   Inicjalizacja wskaźnika do pamięci współdzielonej (przesunięcie wskaźnika sharedInt o offset);
+    *   Ustawienie wskaźnika do kolejnej części pamięci współdzielonej (za tablicą sharedFloat), 
+    *   która przechowuje pojedynczą wartość typu float;
+    */
 
     extern __shared__ int sharedInt[];
     size_t shOffset = (sizeof(float)/sizeof(int)*(numberOfVertexes));
     float* sharedFloat = (float*)(&sharedInt[shOffset]);
     float* denominator = &sharedFloat[numberOfVertexes];
 
+    // Identyfikator wątku
     int threadId = blockIdx.x;
 
+    // Inicjalizacja stanu generatora liczb pseudolosowych
     curandState state;
     curand_init((unsigned long long)clock() + threadId, 0, 0, &state);
+
+    /**
+    *   W pamięci zarezerwowanej dla wątku o id threadId zapisujemy początkowy wierzchołek
+    *   Przechowujemy go również w pamięciu współdzielonej 
+    */
 
     int* solution = &solutionsPointer[threadId * numberOfVertexes];
     int lastVisitedVertex = (int)(curand_uniform(&state) * numberOfVertexes);
@@ -136,41 +155,48 @@ __global__ void findSolutions(int* solutionsPointer, int* edgesMatrix, float* ph
     int visitedCount = 1;
 
     auto skip = false;
- 
-    if (threadIdx.x > numberOfVertexes + 1 || threadId > numberOfVertexes) skip = true;
-    auto position = threadIdx.x;
-    auto ownVertex = threadIdx.x;
+    auto threadIdentifier = threadIdx.x;
+    if (threadIdentifier > numberOfVertexes + 1 || threadId > numberOfVertexes) skip = true;
+    auto position = threadIdentifier;
+    auto ownVertex = threadIdentifier;
     float alpha = 1.0f, beta = 3.0f;
     int nextVertex;
     while (visitedCount < numberOfVertexes) {
-        if (threadIdx.x != 0 && !skip) {
+        if (threadIdentifier != 0 && !skip) {
             auto prev = sharedInt[visitedCount-1];
             if (ownVertex == prev) skip = true;
             else if (prev > ownVertex) position++;
             if (!skip) calculateNominatorToShared(sharedInt, sharedFloat, ownVertex, position, prev, pheromoneMatrix, edgesMatrix, numberOfVertexes);
         }
+
+        /**
+        *   Synchronizacja wątków po obliczeniach liczników oraz
+        *   Obliczanie mianownika prawdopodobieństwa w wątku 0
+        */
+
         __syncthreads();
-        if (threadIdx.x == 0 && !skip) {
+        if (threadIdentifier == 0 && !skip) {
             *denominator = calculateDenominator( sharedFloat, visitedCount, numberOfVertexes);
         }
-        __syncthreads();
-        if (threadIdx.x != 0 && !skip) {
+        __syncthreads(); 
+
+        //Normalizacja prawdopodobieństwa w pozostałych wątkach
+        if (threadIdentifier != 0 && !skip) {
             normalize(sharedFloat, denominator, position);
         }
         __syncthreads();
-        if (threadIdx.x == 0 && !skip) {
+
+        //Wybór kolejnego wierzchołka przez wątek 0 na podstawie prawdopodobieństwa
+        if (threadIdentifier == 0 && !skip) {
             nextVertex = choseVertexByProbability(sharedInt, sharedFloat, visitedCount, numberOfVertexes, state);
             sharedInt[visitedCount] = nextVertex;
+            solution[visitedCount] = nextVertex;
         }
         __syncthreads();
         lastVisitedVertex = nextVertex;
         visitedCount++;
-
-        if (threadIdx.x == 0 && !skip) {
-            solution[visitedCount] = nextVertex;
-        }
+        
     }
-
 }
 
 namespace GPU {
@@ -192,13 +218,14 @@ namespace GPU {
         int startingVertexForAnt = startingVertex;
         int chosenVertex;
 
-
         std::vector<int> flatEdges;
         for (const auto& row : edges) {
             flatEdges.insert(flatEdges.end(), row.begin(), row.end());
         }
-
-        int* d_edges;
+        /**
+            Inicjalizacja tablicy krawędzi w pamięciu GPU
+        */
+        int* d_edges; 
         cudaMalloc(&d_edges, flatEdges.size() * sizeof(int));
         cudaMemcpy(d_edges, flatEdges.data(), flatEdges.size() * sizeof(int), cudaMemcpyHostToDevice);
 
@@ -206,14 +233,22 @@ namespace GPU {
         for (const auto& row : pheromoneMatrix) {
             flatPheromone.insert(flatPheromone.end(), row.begin(), row.end());
         }
-
+        /**
+            Inicjalizacja tablicy feromonów w pamięciu GPU
+        */
         float* d_pheromoneMatrix;
         cudaMalloc(&d_pheromoneMatrix, flatPheromone.size() * sizeof(float));
         cudaMemcpy(d_pheromoneMatrix, flatPheromone.data(), flatPheromone.size() * sizeof(float), cudaMemcpyHostToDevice);
 
+        /**
+            Inicjalizacja tablicy prawdopodobieństw w pamięciu GPU
+        */
         float* d_probMatrix;
         cudaMalloc(&d_probMatrix, numberOfVertexes * numberOfVertexes * sizeof(float));
 
+        /**
+            Inicjalizacja tablicy mrówek w pamięciu GPU
+        */
         int* d_colony;
         cudaMalloc(&d_colony, colonySize * edges.size() * sizeof(int));
 
@@ -221,45 +256,45 @@ namespace GPU {
         for (auto i = 0; i < numberOfVertexes; i++) {
             h_costs[i] = i;
         }
+        /**
+            Inicjalizacja tablicy kosztów przejścia między miastami w pamięciu GPU
+        */
         int* d_costs;
         cudaMalloc(&d_costs, colonySize * sizeof(int));
 
         int* h_colony = (int*)malloc(colonySize * edges.size() * sizeof(int));
         for (int j = 0; j < numberOfIterations; j++) {
             int blockMaxSize = -1;
-            int threadsPerBlock = 32;    
+            int threadsPerBlock = 32;
             int sharedMemorySize = blockMaxSize;
-            int numberOfBlocks = colonySize/threadsPerBlock + 1;
+            int numberOfBlocks = colonySize / threadsPerBlock + 1;
 
-            findSolutions <<<colonySize, numberOfVertexes + 1, numberOfVertexes * (sizeof(float) + sizeof(int)) + sizeof(float) >>> (d_colony, d_edges, d_pheromoneMatrix, numberOfVertexes );
-            evapouratePheromoneD<<<numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock>>>(d_pheromoneMatrix, 0.1, numberOfVertexes);
-            leavePheromone <<<numberOfBlocks, threadsPerBlock>>> (d_pheromoneMatrix,  d_edges, d_colony, numberOfVertexes, 0.4, d_costs, colonySize); 
-
+            /**
+                Wywołanie kolejnych funkcji z wykorzystaniem wątków GPU
+            */
+            findSolutions << <colonySize, numberOfVertexes + 1, numberOfVertexes* (sizeof(float) + sizeof(int)) + sizeof(float) >> > (d_colony, d_edges, d_pheromoneMatrix, numberOfVertexes);
+            evapouratePheromoneD << <numberOfVertexes * numberOfVertexes / threadsPerBlock, threadsPerBlock >> > (d_pheromoneMatrix, 0.1, numberOfVertexes);
+            leavePheromone << <numberOfBlocks, threadsPerBlock >> > (d_pheromoneMatrix, d_edges, d_colony, numberOfVertexes, 0.4, d_costs, colonySize);
+            
+            /**
+                Skopiowanie wyników - koszty a nie trasa - do pamięci hosta
+            */
             cudaMemcpy(h_costs, d_costs, colonySize * sizeof(int), cudaMemcpyDeviceToHost);
             int bestIndex = -1;
-            for(auto i = 0; i < colonySize; i++) {
-                if(h_costs[i] < minCost) {
+            for (auto i = 0; i < colonySize; i++) {
+                if (h_costs[i] < minCost) {
                     minCost = h_costs[i];
                     bestIndex = i;
                 }
             }
             if (bestIndex != -1) {
+                /**
+                    Zapisanie najlepszego rozwiązania do pamięci hosta
+                */
                 cudaMemcpy(result, &d_colony[bestIndex * numberOfVertexes], numberOfVertexes * sizeof(int), cudaMemcpyDeviceToHost);
             }
         }
         return result;
-    }
-
-    bool containsOnlyCities(int* path, int numberOfCities) {
-        auto zero_corrected = false;
-        for(auto i = 0; i < numberOfCities; i++) {
-            if(path[i] > numberOfCities || path[i] < 0) {
-                if (zero_corrected) return false;
-                zero_corrected = true;
-                path[i] = 0;
-            }
-        }
-        return true;
     }
 
     void ACOImplementation::evaporatePheromoneCAS(float Qcycl, float pheromoneEvaporationRate, int* colony)
