@@ -1,5 +1,11 @@
 add_subdirectory(cpu)
-add_subdirectory(gpu)
+if (CMAKE_CUDA_COMPILER)
+    message(STATUS "Including gpu in build")
+    add_subdirectory(gpu)
+else()
+    message(STATUS "Omitting gpu in build")
+endif()
+
 add_subdirectory(utils)
 add_subdirectory(main)
 add_subdirectory(nonconcurrent)

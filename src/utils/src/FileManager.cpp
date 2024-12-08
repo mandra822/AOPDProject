@@ -34,7 +34,7 @@ std::vector<FileData> FileManager::loadTestInitFile(std::string initFileName) {
         file >> testFile.colonySize;
         file >> testFile.numberOfIterations;
         file >> testFile.bestSolution;
-        file >> testFile.acceptedError; //Accepted error in percentage
+        file >> testFile.acceptedError;
         testFiles.push_back(testFile);
     }
     return testFiles;
