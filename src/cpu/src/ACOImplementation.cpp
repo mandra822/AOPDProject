@@ -32,6 +32,7 @@ namespace CPU {
         int lastVisitedVertex = ant.visitedVertexes.back();
 
         vector<VertexProbability> chances;
+        int lastNotVisited;
 
         denominator = calculateDenominator(ant, lastVisitedVertex, alpha, beta);
 
@@ -39,7 +40,7 @@ namespace CPU {
         {
             if (find(ant.visitedVertexes.begin(), ant.visitedVertexes.end(), i) != ant.visitedVertexes.end()) continue; 
             if (i == lastVisitedVertex) continue;
-
+            lastNotVisited = i;
             // if not visited, calculate probability
             // (Tij)^(alpha) * (Nij)^Beta, where Tij -> pheromoneMatrix[i][j] and Nij -> 1/Lij [cryterium visibility] -> Lij = length, cost so adjencyMatrix
             // cant divide by zero, if cost of edge is zero take a small value instead
@@ -66,6 +67,7 @@ namespace CPU {
             cumulativeSum += chances[i].probability;
             if (cumulativeSum > toss) return chances[i].vertex;
         }
+        return lastNotVisited;
     }
 
     void ACOImplementation::init(int startingVertex, vector<vector<int>> edges, float alpha, float beta, int numberOfVertexes, int colonySize)
