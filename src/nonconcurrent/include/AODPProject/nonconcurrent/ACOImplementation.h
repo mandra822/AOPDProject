@@ -2,6 +2,7 @@
 #include "Ant.h"
 #include "VertexProbability.h"
 #include <algorithm>
+#include <climits>
 
 namespace NONCONCURRENT {
     class ACOImplementation {

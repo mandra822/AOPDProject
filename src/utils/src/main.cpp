@@ -12,5 +12,5 @@ int main(int argc, char *argv[])
               << static_cast<void*>(argv[argc]) << '\n';
  
  
-    return argc == 3 ? EXIT_SUCCESS : EXIT_FAILURE; // optional return value
+    return argc == 3 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
