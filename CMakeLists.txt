@@ -1,5 +1,21 @@
-cmake_minimum_required( VERSION 3.0 )
-project(AODPProject)
+cmake_minimum_required( VERSION 3.8 )
+project(AODPProject LANGUAGES CXX)
+
+include(CheckLanguage)
+check_language(CUDA)
+if (CMAKE_CUDA_COMPILER)
+    message(STATUS "CUDA is OK")
+    enable_language(CUDA)
+    if(NOT DEFINED CMAKE_CUDA_STANDARD)
+        set(CMAKE_CUDA_STANDARD 11)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    endif()
+
+    set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "-g -G")
+    set(CUDA_NVCC_FLAGS "-arch sm_75 -g -G -dc ")
+else()
+    message(STATUS "No CUDA")
+endif()
 
 option(ONLY_COVERAGE "Build only tests necessary for coverage" FALSE)
 option(LIBCPP "Build with libc++" FALSE)

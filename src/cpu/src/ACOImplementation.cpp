@@ -4,6 +4,7 @@
 #include <mutex>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 std::mutex pheromoneMutex;
 namespace CPU {
     float ACOImplementation::calculateDenominator(Ant ant, int lastVertex, float alpha, float beta)
@@ -17,9 +18,9 @@ namespace CPU {
 
             // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVertex][i] != 0) { 
-                denominator += pow(pheromoneMatrix[lastVertex][i], alpha) * pow(((float)1 / edges[lastVertex][i]), beta); }
+                denominator += std::pow(pheromoneMatrix[lastVertex][i], alpha) * std::pow(((float)1 / edges[lastVertex][i]), beta); }
             else {
-                denominator += pow(pheromoneMatrix[lastVertex][i], alpha) * pow(((float)1 / 0.1), beta);
+                denominator += std::pow(pheromoneMatrix[lastVertex][i], alpha) * std::pow(((float)1 / 0.1), beta);
             }
         }
 
@@ -44,10 +45,10 @@ namespace CPU {
             // (Tij)^(alpha) * (Nij)^Beta, where Tij -> pheromoneMatrix[i][j] and Nij -> 1/Lij [cryterium visibility] -> Lij = length, cost so adjencyMatrix
             // cant divide by zero, if cost of edge is zero take a small value instead
             if (edges[lastVisitedVertex][i] != 0) {
-                nominator = (float)pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * pow((float)1 / edges[lastVisitedVertex][i], beta);
+                nominator = (float)std::pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * std::pow((float)1 / edges[lastVisitedVertex][i], beta);
             } 
             else {
-                nominator = (float)pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * pow((float)1 / 0.1, beta);
+                nominator = (float)std::pow(pheromoneMatrix[lastVisitedVertex][i], alpha) * std::pow((float)1 / 0.1, beta);
             }
             probability = nominator / denominator;
 
@@ -64,7 +65,7 @@ namespace CPU {
         for (int i = 0; i < chances.size(); i++)	
         {
             cumulativeSum += chances[i].probability;
-            if (cumulativeSum > toss) return chances[i].vertex;
+            if (std::isnan(cumulativeSum) || cumulativeSum > toss) return chances[i].vertex;
         }
     }
 

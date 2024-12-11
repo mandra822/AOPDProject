@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-namespace CPU {
+namespace GPU {
     struct VertexProbability {
         int vertex;
         float probability;
@@ -14,4 +14,3 @@ namespace CPU {
         }
     };
 }
-
